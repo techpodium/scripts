@@ -1,2 +1,2 @@
 # automation-test
-testing with current revision
+testing pull request (having both branch + pr discover)
