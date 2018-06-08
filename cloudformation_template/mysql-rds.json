@@ -1,0 +1,290 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "MySQL RDS Template for Wordpress Sites",
+
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "Create Database from DB Snapshot"
+                    },
+                    "Parameters": [
+                        "DBSnapshotName"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "New RDS Intance and First Database Configuration"
+                    },
+                    "Parameters": [
+                        "RdsDbEc2InstanceType",
+                        "RdsDbInstanceName",
+                        "RdsDatabaseName",
+                        "RdsDbUserName",
+                        "RdsDbUserPassword",
+                        "MysqlDbPort",
+                        "MysqlDbMasterUserName",
+                        "MysqlDbMasterUserPassword",
+                        "RdsDbStorage"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Maintenance and Backup Configuration"
+                    },
+                    "Parameters": [
+                        "DbMaintenanceWindow",
+                        "DbBackupWindow",
+                        "MultiAzSupport"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Subnet Group for RDS - Select Private Subnets"
+                    },
+                    "Parameters": [
+                        "PrivateSubnetA",
+                        "PrivateSubnetB"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "VPC and Security Configuration"
+                    },
+                    "Parameters": [
+                        "PreferedAvailabilityZone",
+                        "RdsSecurityGroup"
+                    ]
+                }
+
+            ]
+        }
+    },
+
+    "Parameters": {
+        "PrivateSubnetA": {
+            "Description": "Select a Private Subnet Id (make sure you are selecting right one)",
+            "Type": "AWS::EC2::Subnet::Id",
+            "Default": ""
+        },
+        "PrivateSubnetB": {
+            "Description": "Select a Private Subnet Id (make sure you are selecting right one)",
+            "Type": "AWS::EC2::Subnet::Id",
+            "Default": ""
+        },
+        "RdsDbStorage": {
+            "Description": "Storage size of RDS DB",
+            "Type": "Number",
+            "Default": "20",
+            "MinValue": "5",
+            "MaxValue": "1024",
+            "ConstraintDescription": "size must be between 5GB to 1024GB"
+        },
+        "PreferedAvailabilityZone": {
+            "Description": "Prefered AZ for RDS Instance - Select Based on your Private Subnet Selected Earlier; Keep Blank if RDS is Multi-AZ Supported",
+            "Type": "AWS::EC2::AvailabilityZone::Name",
+            "Default": ""
+        },
+        "RdsDbEc2InstanceType": {
+            "Description": "RDS DB EC2 Instance Type",
+            "Type": "String",
+            "Default": "db.t2.micro",
+            "AllowedValues": [ "db.t2.micro", "db.t2.medium", "db.t2.small" ]
+        },
+        "RdsDbInstanceName": {
+            "Description": "Identifier (Name) of RDS DB Instance",
+            "Type": "String",
+            "Default": "wpmysqlrds",
+            "AllowedPattern": "^[a-z][a-z0-9]*",
+            "MinLength": "1",
+            "MaxLength": "63",
+            "ConstraintDescription": "Identifier/Name must be between 1 to 63 alphanumaric characters"
+        },
+        "RdsDatabaseName": {
+            "Description": "MySQL DB Name (this DB will show up in RDS Console), if left empty then no database is created, just the instance",
+            "Type": "String",
+            "Default": "wpdev5"
+        },
+        "RdsDbUserName": {
+            "Description": "MySQL DB User Name",
+            "Type": "String",
+            "Default": "wpdev5user"
+        },
+        "RdsDbUserPassword": {
+            "Description": "DB User Password",
+            "Type": "String",
+            "NoEcho": "true",
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "MinLength": "8",
+            "MaxLength": "30",
+            "ConstraintDescription": "DB User Password must be between 8 to 30 alphanumaric characters"
+        },
+        "DBSnapshotName": {
+            "Description": "Name of a DB Snapshot to restore DB from it (optional)",
+            "Type": "String",
+            "Default": ""
+        },
+        "MysqlDbMasterUserName": {
+            "Description": "MySQL DB Master User Name",
+            "Type": "String",
+            "Default": "wpadmin"
+        },
+        "MysqlDbMasterUserPassword": {
+            "Description": "Master User Password",
+            "Type": "String",
+            "NoEcho": "true",
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "MinLength": "8",
+            "MaxLength": "30",
+            "ConstraintDescription": "Master User Password must be between 8 to 30 alphanumaric characters"
+        },
+        "MultiAzSupport": {
+            "Description": "true - if RDS Supports MultiAZ, false otherwise",
+            "Type": "String",
+            "Default": "false",
+            "AllowedValues": [ "true", "false" ]
+        },
+        "MysqlDbPort": {
+            "Description": "MySQL DB Port Number",
+            "Type": "Number",
+            "Default": "3306"
+        },
+        "DbBackupWindow": {
+            "Description": "Database Backup Window: UTC format hh24:mi-hh34:mi",
+            "Type": "String",
+            "Default": "03:00-05:00",
+            "AllowedPattern": "[0-2]\\d:\\d{2}-[0-2]\\d:\\d{2}",
+            "ConstraintDescription": "Follow this time format hh24:mi-hh34:mi"
+        },
+        "DbMaintenanceWindow": {
+            "Description": "Databae Maintenance Window: UTC format ddd:hh24:mi-ddd:hh24:mi",
+            "Type": "String",
+            "Default": "sat:08:00-sat:09:00",
+            "AllowedPattern": "(mon|tue|wed|thu|fri|sat|sun):[0-2]\\d:\\d{2}-(mon|tue|wed|thu|fri|sat|sun):[0-2]\\d:\\d{2}",
+            "ConstraintDescription": "Follow this time format ddd:hh24:mi-ddd:hh24:mi"
+        },
+        "RdsSecurityGroup": {
+            "Description": "Select Security Group Scpecific for RDS",
+            "Type": "AWS::EC2::SecurityGroup::Id",
+            "Default": ""
+        }
+    },
+
+    "Conditions": {
+        "UseDBSnapshot": {
+            "Fn::Not": [ { "Fn::Equals": [ { "Ref": "DBSnapshotName" }, "" ] } ]
+        },
+        "IsMultiAzSupported": {
+            "Fn::Equals": [ { "Ref": "MultiAzSupport" }, "true" ]
+        }
+    },
+
+    "Resources": {
+        "RdsSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupDescription": "Subnet Group Including Private Subnets for RDS DB",
+                "SubnetIds": [
+                    { "Ref": "PrivateSubnetA" },
+                    { "Ref": "PrivateSubnetB" }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "rds-mysql-db-subnet-group"
+                    }
+                ]
+            }
+        },
+        "RdsParameterGroupName": {
+            "Type": "AWS::RDS::DBParameterGroup",
+            "Properties": {
+                "Description": "MySQL RDS Parameter Group",
+                "Family": "mysql5.6",
+                "Parameters": {
+                    "max_allowed_packet": "104857600"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "rds-mysql-parameter-group"
+                    }
+                ]
+            }
+        },
+        "RdsMysqlDbInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "AllocatedStorage": {
+                    "Ref": "RdsDbStorage"
+                },
+                "AllowMajorVersionUpgrade": "false",
+                "AutoMinorVersionUpgrade": "true",
+                "AvailabilityZone": {
+                    "Fn::If": [
+                        "IsMultiAzSupported",
+                        { "Ref": "AWS::NoValue" },
+                        { "Ref": "PreferedAvailabilityZone" }
+                    ]
+                },
+                "BackupRetentionPeriod": "7",
+                "DBInstanceClass": {
+                    "Ref": "RdsDbEc2InstanceType"
+                },
+                "DBInstanceIdentifier": {
+                    "Ref": "RdsDbInstanceName"
+                },
+                "DBName": {
+                    "Ref": "RdsDatabaseName"
+                },
+                "DBParameterGroupName": {
+                    "Ref": "RdsParameterGroupName"
+                },
+                "DBSnapshotIdentifier": {
+                    "Fn::If": [
+                        "UseDBSnapshot",
+                        { "Ref": "DBSnapshotName" },
+                        { "Ref": "AWS::NoValue" }
+                    ]
+                },
+                "DBSubnetGroupName": {
+                    "Ref": "RdsSubnetGroup"
+                }
+                },
+                "Engine": "mysql",
+                "EngineVersion": "MySQL 5.6.27",
+                "MasterUsername": {
+                    "Ref": "MysqlDbMasterUserName"
+                },
+                "MasterUserPassword": {
+                    "Ref": "MysqlDbMasterUserPassword"
+                },
+                "MultiAZ": {
+                    "Ref": "MultiAzSupport"
+                },
+                "Port": {
+                    "Ref": "MysqlDbPort"
+                },
+                "PreferredBackupWindow": {
+                    "Ref": "DbBackupWindow"
+                },
+                "PubliclyAccessible": "false",
+                "PreferredMaintenanceWindow": {
+                    "Ref": "DbMaintenanceWindow"
+                },
+                "StorageEncrypted": "false",
+                "StorageType": "gp2",
+                "VPCSecurityGroups": {
+                    "Ref": "RdsSecurityGroup"
+                }
+            },
+            "DependsOn": [
+                "RdsSubnetGroup",
+                "RdsParameterGroupName"
+            ],
+            "DeletionPolicy": "Snapshot"
+        }
+    }
+}
