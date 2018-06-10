@@ -1,0 +1,275 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "My VPC Template",
+    "Parameters": {
+        "VpcName": {
+            "Description": "VPC Name",
+            "Type": "String",
+            "Default": "my-vpc"
+        },
+        "AZa": {
+            "Description": "Availability Zone a",
+            "Type": "AWS::EC2::AvailabilityZone::Name",
+            "Default": "us-east-1a"
+        },
+        "AZb": {
+            "Description": "Availability Zone b",
+            "Type": "AWS::EC2::AvailabilityZone::Name",
+            "Default": "us-east-1b"
+        }
+    },
+    "Mappings": {
+        "SubnetMap": {
+            "PrivateSubnet": {
+                "AZa": "10.10.16.0/20",
+                "AZb": "10.10.32.0/20"
+            },
+            "PublicSubnet": {
+                "AZa": "10.10.48.0/20",
+                "AZb": "10.10.64.0/20"
+            }
+        }
+    },
+    "Resources": {
+        "Vpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.10.0.0/16",
+                "EnableDnsHostnames": "true",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "VpcName"
+                        }
+                    }
+                ]
+            }
+        },
+        "InternetGW": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "my-internet-gateway"
+                    }
+                ]
+            }
+        },
+        "IgwVpcAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "InternetGW"
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            }
+        },
+        "PublicSubnetRoutingTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "public-subnet-routing-table"
+                    }
+                ]
+            }
+        },
+        "PublicSubnetDefaultRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGW"
+                },
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRoutingTable"
+                }
+            },
+            "DependsOn" : "IgwVpcAttachment"
+        },
+        "PublicSubnetA": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZa"
+                },
+                "CidrBlock": {
+                    "Fn::FindInMap": [
+                        "SubnetMap",
+                        "PublicSubnet",
+                        "AZa"
+                    ]
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "public-subnet-A"
+                    }
+                ]
+            }
+        },
+        "PublicSubnetB": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZb"
+                },
+                "CidrBlock": {
+                    "Fn::FindInMap": [
+                        "SubnetMap",
+                        "PublicSubnet",
+                        "AZb"
+                    ]
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "public-subnet-B"
+                    }
+                ]
+            }
+        },
+        "PublicSubnetARouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRoutingTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnetA"
+                }
+            }
+        },
+        "PublicSubnetBRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRoutingTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnetB"
+                }
+            }
+        },
+        "PrivateSubnetARoutingTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "private-subnet-routing-table-A"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnetBRoutingTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "private-subnet-routing-table-B"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnetA": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZa"
+                },
+                "CidrBlock": {
+                    "Fn::FindInMap": [
+                        "SubnetMap",
+                        "PrivateSubnet",
+                        "AZa"
+                    ]
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "private-subnet-A"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnetB": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZb"
+                },
+                "CidrBlock": {
+                    "Fn::FindInMap": [
+                        "SubnetMap",
+                        "PrivateSubnet",
+                        "AZb"
+                    ]
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "private-subnet-B"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnetARouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnetARoutingTable"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnetA"
+                }
+            }
+        },
+        "PrivateSubnetBRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnetBRoutingTable"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnetB"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "VpcID": {
+            "Description": "The ID of VPC",
+            "Value": {
+                "Ref": "Vpc"
+            }
+        }
+    }
+}
