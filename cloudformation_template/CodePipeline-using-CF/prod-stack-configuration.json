@@ -1,0 +1,9 @@
+{
+  "Parameters" : {
+    "DBName" : "ProdWordPressDB",
+    "DBPassword" : "ProdDBPassword",
+    "DBRootPassword" : "ProdDBRootPassword",
+    "DBUser" : "ProdDBuser",
+    "KeyName" : "rehnuma-dev-06-2018.pem"
+  }
+}
