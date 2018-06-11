@@ -1,1 +1,0 @@
-git clone -b $GIT_LOCAL_BRANCH $GIT_URL
