@@ -1,5 +1,5 @@
 {
-  "Description":"Automate provisioning of CodeBuild with CodePipeline, CodeCommit, and CodeDeploy. **WARNING** This template creates one or more Amazon EC2 instances. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description":"Automate provisioning of CodeBuild with CodePipeline, CodeCommit, and CodeDeploy. **WARNING** This template creates one or more Amazon EC2 instances. You will be billed for the AWS resources used if you create a stack from this template. S3 bucket named codepipeline-<region-name>-<account-id> should be creatd before executing the stack",
   "AWSTemplateFormatVersion":"2010-09-09",
   "Parameters":{
     "EmailAddress":{
@@ -261,7 +261,7 @@
     "CodeDeployEC2InstancesStack":{
       "Type":"AWS::CloudFormation::Stack",
       "Properties":{
-        "TemplateURL":"https://s3.amazonaws.com/stelligent-public/cloudformation-templates/github/labs/codebuild/CodeDeploy_SampleCF_Template.json",
+        "TemplateURL":"https://s3-us-west-2.amazonaws.com/codepipeline-us-west-2-585165548404/CodeDeploy_SampleCF_Template_on_default_vpc.json",
         "TimeoutInMinutes":"60",
         "Parameters":{
           "TagValue":{
