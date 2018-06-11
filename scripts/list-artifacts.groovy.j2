@@ -1,0 +1,9 @@
+def region = "{{ aws_region }}"
+def bucketname = "{{ jenkins.artifact_s3_bucket }}"
+def folder = "wordpress-releases"
+def prefix = "{{ sub_job.artifact_prefix }}-"
+
+def result = []
+def command = "aws s3 ls --region ${region} s3://${bucketname}/${folder}/${prefix}"
+command.execute().text.eachLine { result.add(it.tokenize(" ")[-1]) }
+return result

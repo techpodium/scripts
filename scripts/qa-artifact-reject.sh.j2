@@ -1,0 +1,10 @@
+S3_OPTIONS="--region {{ aws_region }} --acl bucket-owner-full-control --sse AES256"
+aws s3 mv s3://{{ jenkins.artifact_s3_bucket }}/wordpress-releases/$ARTIFACT_NAME s3://{{ jenkins.artifact_s3_bucket }}/failed-artifacts/$ARTIFACT_NAME $S3_OPTIONS
+
+
+title="Artifact ${ARTIFACT_NAME} was Rejected by QA"
+text="QA Comment: ${QA_REJECT_COMMENT}"
+slack_message_color="danger"
+remark="Artifact Access URL: https://s3.{{ aws_region }}.amazonaws.com/{{ jenkins.artifact_s3_bucket }}/failed-artifacts/${ARTIFACT_NAME}"
+
+`/usr/bin/python /opt/scripts/slack_notifier.py "$title" "$text" "$GIT_REPO_NAME" "$GIT_PR_TITLE" "$remark" "$slack_message_color"`

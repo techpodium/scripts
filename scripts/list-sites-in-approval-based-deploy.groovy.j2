@@ -1,0 +1,22 @@
+import hudson.model.*
+
+def params = (Thread.currentThread().toString() =~ /job\/(.*)\/([0-9]+)\/.*\//)[0]
+current_build_number = params[2]
+job_name = params[1]
+
+def job = hudson.model.Hudson.instance.getItem(job_name)
+def current_build = job.getBuild(current_build_number)
+def current_env_vars = current_build.getEnvironment(TaskListener.NULL);
+def group = current_env_vars['INSTANCE_GROUP']
+
+if (group.equals("broadsheets")) {
+  return ["vancouversun", "montrealgazette", "calgaryherald", "edmontonjournal", "thestarphoenix", "leaderpost", "windsorstar"]
+} else if (group.equals("communities")) {
+  return ["thewhig", "thesudburystar", "edmontonexaminer", "kingstonthisweek"]
+} else if (group.equals("driving")) {
+  return ["driving"]
+} else if (group.equals("npfp")) {
+  return ["nationalpost", "finantialpost"]
+} else if (group.equals("suns")) {
+  return ["torontosun", "calgarysun", "edmontonsun", "ottawasun", "winnipegsun"]
+}
