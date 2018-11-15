@@ -1,0 +1,28 @@
+import hudson.model.*
+
+def params = (Thread.currentThread().toString() =~ /job\/(.*)\/([0-9]+)\/.*\//)[0]
+current_build_number = params[2]
+job_name = params[1]
+
+def job = hudson.model.Hudson.instance.getItem(job_name)
+def current_build = job.getBuild(current_build_number)
+
+def current_env_vars = current_build.getEnvironment(TaskListener.NULL);
+def current_artifact = current_env_vars['CURRENT_BUILT_ARTIFACT_NAME']
+def repo_name = current_env_vars['REPO_NAME']
+
+def builds = job.getBuilds()
+def artifac_list = []
+def region = "{{ aws_region }}"
+def bucketname = "{{ s3_bucket.name }}"
+def folder = "{{ s3_bucket.folder_name }}"
+
+def command = "aws s3 ls --region ${region} s3://${bucketname}/${folder}/${repo_name}-"
+command.execute().text.eachLine { def line ->
+	def artifact = line.tokenize(" ")[-1]
+	if (artifact.equals(current_artifact))
+		artifac_list.add("${artifact}:selected")
+  	else
+		artifac_list.add(artifact)
+}
+return artifac_list

@@ -1,0 +1,23 @@
+import hudson.model.*
+
+def params = (Thread.currentThread().toString() =~ /job\/(.*)\/([0-9]+)\/.*\//)[0]
+current_build_number = params[2]
+job_name = params[1]
+
+def job = hudson.model.Hudson.instance.getItem(job_name)
+def current_build = job.getBuild(current_build_number)
+def current_env_vars = current_build.getEnvironment(TaskListener.NULL);
+def instance_group = current_env_vars['EC2_INSTANCE_GROUP']
+
+def result = []
+def region = "{{ aws_region }}"
+def filter_key = "Name"
+def filter_value = "{{ vpc_name }}-${instance_group}-*"
+
+def command = "aws ec2 describe-instances --region=${region} --filters Name=tag:${filter_key},Values=${filter_value} Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[Tags[?Key==`Name`].Value] --output text"
+command.execute().text.eachLine { result.add(it.replaceAll('-','_')) }
+if (result?.empty) {
+	return ['No Server Found']
+} else {
+	return result
+}
